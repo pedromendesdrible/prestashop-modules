@@ -3123,6 +3123,8 @@ class FrontContainer extends \PrestaShop\PrestaShop\Adapter\Container\LegacyCont
                 60 => 'psxmarketingwithgoogle',
                 61 => 'blockreassurance',
                 62 => 'ps_facetedsearch',
+                63 => 'barraavisos',
+                64 => 'textos',
             ],
             'ps_cache_dir' => 'C:\\xampp\\htdocs\\prestashop/var/cache/prod\\',
             'mail_themes_uri' => '/mails/themes',

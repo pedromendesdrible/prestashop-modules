@@ -23,5 +23,4 @@
 *  International Registered Trademark & Property of PrestaShop SA
 *}
 
-
-123
+<div><p class="text-black">{$txt_avisos}</p></div>

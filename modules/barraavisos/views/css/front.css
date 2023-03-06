@@ -25,3 +25,13 @@
 * Don't forget to prefix your containers with your own identifier
 * to avoid any conflicts with others containers.
 */
+
+.text-black {
+    background:rgb(204, 32, 32);
+    font: 15px/18px Helvetic, Arial, sans-serif;
+    font-style: normal;
+    color: white;
+    padding: 20px 12px;  
+    top: -1px;  
+    text-align: center;
+};

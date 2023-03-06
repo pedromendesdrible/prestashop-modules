@@ -60,7 +60,7 @@ class Barraavisos extends Module
     public function install()
     {
         Configuration::updateValue('BARRAAVISOS_LIVE_MODE', false);
-        print_r("1,2,3"); die();
+      
 
         return parent::install() &&
             $this->registerHook('header') &&
@@ -135,37 +135,12 @@ class Barraavisos extends Module
                 ),
                 'input' => array(
                     array(
-                        'type' => 'switch',
-                        'label' => $this->l('Live mode'),
-                        'name' => 'BARRAAVISOS_LIVE_MODE',
-                        'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode'),
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => $this->l('Enabled')
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => $this->l('Disabled')
-                            )
-                        ),
-                    ),
-                    array(
-                        'col' => 3,
+                        'col' => '4',
                         'type' => 'text',
-                        'prefix' => '<i class="icon icon-envelope"></i>',
-                        'desc' => $this->l('Enter a valid email address'),
-                        'name' => 'BARRAAVISOS_ACCOUNT_EMAIL',
-                        'label' => $this->l('Email'),
-                    ),
-                    array(
-                        'type' => 'password',
-                        'name' => 'BARRAAVISOS_ACCOUNT_PASSWORD',
-                        'label' => $this->l('Password'),
-                    ),
+                        'label' => $this->l('Texto Avisos', array()),
+                        'name' => 'txt_avisos',
+                        'desc' => $this->l('Enter a valid text to header'),
+                     ),
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
@@ -179,11 +154,9 @@ class Barraavisos extends Module
      */
     protected function getConfigFormValues()
     {
-        return array(
-            'BARRAAVISOS_LIVE_MODE' => Configuration::get('BARRAAVISOS_LIVE_MODE', true),
-            'BARRAAVISOS_ACCOUNT_EMAIL' => Configuration::get('BARRAAVISOS_ACCOUNT_EMAIL', 'contact@prestashop.com'),
-            'BARRAAVISOS_ACCOUNT_PASSWORD' => Configuration::get('BARRAAVISOS_ACCOUNT_PASSWORD', null),
-        );
+        $fields['txt_avisos'] = Configuration::get('txt_avisos');
+
+        return $fields;
     }
 
     /**
@@ -193,34 +166,23 @@ class Barraavisos extends Module
     {
         $form_values = $this->getConfigFormValues();
 
-        foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
+        {
+            Configuration::updateValue("txt_avisos", Tools::getValue("txt_avisos"));
         }
-    }
-
-    /**
-    * Add the CSS & JavaScript files you want to be loaded in the BO.
-    */
-    public function hookDisplayBackOfficeHeader()
-    {
-        if (Tools::getValue('configure') == $this->name) {
-            $this->context->controller->addJS($this->_path.'views/js/back.js');
-            $this->context->controller->addCSS($this->_path.'views/css/back.css');
-        }
-    }
-
-    /**
-     * Add the CSS & JavaScript files you want to be added on the FO.
-     */
-    public function hookHeader()
-    {
-        $this->context->controller->addJS($this->_path.'/views/js/front.js');
-        $this->context->controller->addCSS($this->_path.'/views/css/front.css');
     }
 
     public function hookDisplayBanner()
     {
+        $this->context->smarty->assign('txt_avisos', Configuration::get('txt_avisos'));
         return $this->display(__FILE__, '/views/templates/front/index.tpl');
 
+    }
+
+
+
+    public function hookHeader()
+    {
+        $this->context->controller->addJS($this->_path.'/views/js/front.js');
+        $this->context->controller->addCSS($this->_path.'/views/css/front.css');
     }
 }
