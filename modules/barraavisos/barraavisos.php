@@ -64,15 +64,10 @@ class Barraavisos extends Module
      */
     public function install()
     {
-        Db::getInstance()->execute(
-            'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'barra_avisos` (
-                 `id_barraavisos` int(100) NOT NULL AUTO_INCREMENT,
-                 `texto` varchar(100) NOT NULL,
-                 PRIMARY KEY (`barra_avisos`)
-                 )ENGINE=InnoDB' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8'
-         );
-
         Configuration::updateValue('BARRAAVISOS_LIVE_MODE', false);
+        
+        $this->_path.'createTables';   //ver em casa se está correto
+        
 
         return parent::install() &&
             $this->registerHook('header') &&
@@ -85,27 +80,21 @@ class Barraavisos extends Module
         Configuration::deleteByName('BARRAAVISOS_LIVE_MODE');
 
         return parent::uninstall();
-
-
-// Call uninstall parent method
-
-    if (!parent::uninstall())
-    return false;
-
-// Execute module install SQL statements
-
-    $sql_file = dirname(__FILE__).'/install/uninstall.sql';
-    if (!$this->loadSQLFile($sql_file))
-    return false;
-
-// Delete configuration values
+    }
     
-    Configuration::deleteByName('barra_avisos');
+     public function createTables()
+    {
+        return Db::getInstance()->execute(
+            'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'barra_avisos` (
+                 `id_barraavisos` int(100) NOT NULL AUTO_INCREMENT,
+                 `texto` varchar(100) NOT NULL,
+                 PRIMARY KEY (`barra_avisos`)
+                 )ENGINE=InnoDB' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8'
+         );
 
     }
 
 
-    
     /**
      * Load the configuration form
      */
