@@ -53,28 +53,59 @@ class Barraavisos extends Module
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
     }
 
+    #1- fazer query para apagar a tabela
+    #2- criar uma função para criar as tabelas 
+    #3- chamar função createTables() no install e deletetables no unnistal
+    #4- ver como funciona guardar o form do backifice na tabela (vais precisar de outra função)
+
     /**
      * Don't forget to create update methods if needed:
      * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
      */
     public function install()
     {
+        Db::getInstance()->execute(
+            'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'barra_avisos` (
+                 `id_barraavisos` int(100) NOT NULL AUTO_INCREMENT,
+                 `texto` varchar(100) NOT NULL,
+                 PRIMARY KEY (`barra_avisos`)
+                 )ENGINE=InnoDB' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8'
+         );
+
         Configuration::updateValue('BARRAAVISOS_LIVE_MODE', false);
-      
-    
+
         return parent::install() &&
             $this->registerHook('header') &&
             $this->registerHook('displayBackOfficeHeader') &&
-            $this->registerHook('displayBanner');
-    }
+            $this->registerHook('displayBanner');            
+    }   
 
     public function uninstall()
     {
         Configuration::deleteByName('BARRAAVISOS_LIVE_MODE');
 
         return parent::uninstall();
+
+
+// Call uninstall parent method
+
+    if (!parent::uninstall())
+    return false;
+
+// Execute module install SQL statements
+
+    $sql_file = dirname(__FILE__).'/install/uninstall.sql';
+    if (!$this->loadSQLFile($sql_file))
+    return false;
+
+// Delete configuration values
+    
+    Configuration::deleteByName('barra_avisos');
+
     }
 
+
+    
     /**
      * Load the configuration form
      */
@@ -97,6 +128,7 @@ class Barraavisos extends Module
     /**
      * Create the form that will be displayed in the configuration of your module.
      */
+    
     protected function renderForm()
     {
         $helper = new HelperForm();
@@ -165,13 +197,18 @@ class Barraavisos extends Module
     /**
      * Save form data.
      */
-    protected function postProcess()
+    public function postProcess()
     {
         $form_values = $this->getConfigFormValues();
 
         {
             Configuration::updateValue("txt_avisos", Tools::getValue("txt_avisos"));
-        }
+        } 
+        if (Tools::isSubmit('submitStoreConf')) {
+            $languages = Language::getLanguages(false);
+            $values = [];
+            $update_images_values = false;
+        }   
     }
 
     public function hookDisplayBanner()
@@ -181,17 +218,18 @@ class Barraavisos extends Module
 
     }
 
-
-
     public function hookHeader()
     {
         $this->context->controller->addJS($this->_path.'/views/js/front.js');
         $this->context->controller->addCSS($this->_path.'/views/css/front.css');
     }
 
+   
+   
+   
+   
 
+
+
+   
 }
-
-
-
-
