@@ -53,9 +53,7 @@ class Barraavisos extends Module
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
     }
 
-    #1- fazer query para apagar a tabela
-    #2- criar uma função para criar as tabelas 
-    #3- chamar função createTables() no install e deletetables no unnistal
+
     #4- ver como funciona guardar o form do backifice na tabela (vais precisar de outra função)
 
     /**
@@ -66,7 +64,7 @@ class Barraavisos extends Module
     {
         Configuration::updateValue('BARRAAVISOS_LIVE_MODE', false);
         
-        $this->_path.'createTables';   //ver em casa se está correto
+        $this->createTables(); 
         
 
         return parent::install() &&
@@ -78,21 +76,49 @@ class Barraavisos extends Module
     public function uninstall()
     {
         Configuration::deleteByName('BARRAAVISOS_LIVE_MODE');
+        
+        $this->deleteTables(); 
 
         return parent::uninstall();
     }
     
+
      public function createTables()
     {
         return Db::getInstance()->execute(
             'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'barra_avisos` (
                  `id_barraavisos` int(100) NOT NULL AUTO_INCREMENT,
                  `texto` varchar(100) NOT NULL,
-                 PRIMARY KEY (`barra_avisos`)
+                 PRIMARY KEY (`id_barraavisos`)
                  )ENGINE=InnoDB' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8'
          );
 
+         $res = true;
+
+         $res &= Db::getInstance()->execute('CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'barraavisos_lang` (
+            `id_barraavisos` INT(10) UNSIGNED NOT NULL,
+            `id_lang` INT(10) UNSIGNED NOT NULL,
+            `texto1` varchar(255) NOT NULL,   
+            PRIMARY KEY (`id_barraavisos`,`id_lang`)
+        ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=UTF8;
+        ');
+
+        return $res;
+
     }
+
+
+    public function deleteTables()
+    
+    {
+        $res = true;
+
+        Db::getInstance()->Execute('DROP TABLE IF EXISTS `'._DB_PREFIX_.'barra_avisos`;');
+        $res &= Db::getInstance()->execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'blocoslidetexto_lang`');
+        
+        return $res;
+    }
+
 
 
     /**
@@ -104,14 +130,17 @@ class Barraavisos extends Module
          * If values have been submitted in the form, process.
          */
         if (((bool)Tools::isSubmit('submitBarraavisosModule')) == true) {
-            $this->postProcess();
+            $this->postProcess(); 
         }
-
-        $this->context->smarty->assign('module_dir', $this->_path);
-
-        $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
-
-        return $output.$this->renderForm();
+            
+            else {
+                $this->context->smarty->assign('module_dir', $this->_path);
+                $this->context->smarty->assign('link', $this->context->link);
+                $this->context->smarty->assign('blocos', $this->getBlocos('admin'));
+                $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
+            }
+    
+            return $output; //preciso  
     }
 
     /**
@@ -120,6 +149,40 @@ class Barraavisos extends Module
     
     protected function renderForm()
     {
+
+            $fields_add_form = array(
+            'form' => array(
+                'legend' => array(
+                    'title' => $this->getTranslator()->trans('Barra Avisos', array(), 'Modules.barraavisos.Admin'),
+                    'icon' => 'icon-cogs'
+                ),
+                'input' => array(
+                    array(
+                        'type' => 'hidden',
+                        'name' => 'id',
+                    ),
+                    array(
+                        'type' => 'hidden',
+                        'name' => 'id_lang',
+                    ),
+                    array(
+                        'type' => 'text',
+                        'label' => 'Texto 1',
+                        'name' => 'texto1',
+                        'lang' => true,
+                    ),
+
+                    ),
+                ),
+                'submit' => array( //preciso
+                    'title' => $this->getTranslator()->trans('Save', array(), 'Admin.Actions'),
+                )
+            
+        );
+
+
+
+
         $helper = new HelperForm();
 
         $helper->show_toolbar = false;
@@ -129,7 +192,12 @@ class Barraavisos extends Module
         $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
 
         $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitBarraavisosModule';
+        if(Tools::getValue('id')){
+            $helper->submit_action = 'submitEditModule';
+        } else {
+            $helper->submit_action = 'submitBarraavisosModule';
+        }
+       
         $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
             .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
@@ -140,16 +208,13 @@ class Barraavisos extends Module
             'id_language' => $this->context->language->id,
         );
 
-        return $helper->generateForm(array($this->getConfigForm()));
+        return $helper->generateForm(array($fields_add_form));
     }
-
-
-    
 
     /**
      * Create the structure of your form.
      */
-    protected function getConfigForm()
+    protected function getConfigForm() //estou aqui
     {
         return array(
             'form' => array(
