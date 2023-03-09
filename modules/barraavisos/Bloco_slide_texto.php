@@ -24,26 +24,34 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-class Barra_de_avisos extends ObjectModel
+class Bloco_slide_texto extends ObjectModel
 {
-    //public $id_shop;
+    public $id_shop;
 
     public $id_lang;
-    public $texto;
-    
+    public $texto1;
+    public $texto2;
+    public $codigodesconto;
+    public $link;
+    public $active;
+
     /**
     * @see ObjectModel::$definition
     */
     public static $definition = array(
-        'table' => 'barra_avisos',
-        'primary' => 'id_barra_avisos',
+        'table' => 'blocoslidetexto',
+        'primary' => 'id_blocoslidetexto',
         'multilang' => true,
         'multilang_shop' => true,
         'fields' => array(
-            'id_barra_avisos' =>    array('type' => self::TYPE_NOTHING, 'validate' => 'isUnsignedId'),
+            'id_blocoslidetexto' =>    array('type' => self::TYPE_NOTHING, 'validate' => 'isUnsignedId'),
 
             // Lang fields
-            'texto' =>         array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 100),
+            'texto1' =>         array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 100),
+            'texto2' =>         array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 100),
+            'codigodesconto' => array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 100),
+            'link' =>           array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 100),
+            'active' =>           array('type' => self::TYPE_INT, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 100),
         )
     );
 

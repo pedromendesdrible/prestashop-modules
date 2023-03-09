@@ -60,6 +60,7 @@ class Barraavisos extends Module
      * Don't forget to create update methods if needed:
      * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
      */
+    
     public function install()
     {
         Configuration::updateValue('BARRAAVISOS_LIVE_MODE', false);
@@ -76,16 +77,37 @@ class Barraavisos extends Module
     {
         Configuration::deleteByName('BARRAAVISOS_LIVE_MODE');
 
+        return parent::uninstall()&&
         $this->deleteTables();
 
-        return parent::uninstall();
+        
+    }
+
+       /**
+     * Load the configuration form
+     */
+    public function getContent()
+    {
+        /**
+         * If values have been submitted in the form, process.
+         */
+        if (((bool)Tools::isSubmit('submitBarraavisos')) == true) {
+            $output = $this->postProcess(false);
+        } else {
+            $this->context->smarty->assign('module_dir', $this->_path);
+            $this->context->smarty->assign('link', $this->context->link);
+            $this->context->smarty->assign('blocos', $this->getBlocos('admin'));
+            $output = $this->renderForm();
+        }
+
+        return $output;
     }
 
     public function createTables()
     {
         Db::getInstance()->execute(
             'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'barra_avisos` (
-                 `id_barra_avisos` int(100) NOT NULL AUTO_INCREMENT,
+                 `id_barra_avisos` int NOT NULL AUTO_INCREMENT,
                  PRIMARY KEY (`id_barra_avisos`)
                  )ENGINE=InnoDB' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8'
         );
@@ -110,26 +132,6 @@ class Barraavisos extends Module
     }
 
     /**
-     * Load the configuration form
-     */
-    public function getContent()
-    {
-        /**
-         * If values have been submitted in the form, process.
-         */
-        if (((bool)Tools::isSubmit('submitBarraavisosModule')) == true) {
-            $output = $this->postProcess(true);
-        } else {
-            $this->context->smarty->assign('module_dir', $this->_path);
-            $this->context->smarty->assign('link', $this->context->link);
-            $this->context->smarty->assign('blocos', $this->getBlocos('admin'));
-            $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
-        }
-
-        return $output;
-    }
-
-    /**
      * Create the form that will be displayed in the configuration of your module.
      */
     protected function renderForm()
@@ -151,16 +153,15 @@ class Barraavisos extends Module
                     ),
                     array(
                         'type' => 'text',
-                        'label' => 'Texto ',
+                        'label' => 'Texto',
                         'name' => 'texto',
                         'lang' => true,
                     ),
-
+                ),
+                'submit' => array(
+                    'title' => $this->getTranslator()->trans('Save', array(), 'Admin.Actions'),
                 ),
             ),
-            'submit' => array(
-                'title' => $this->getTranslator()->trans('Save', array(), 'Admin.Actions'),
-            )
         );
 
         $helper = new HelperForm();
@@ -172,7 +173,7 @@ class Barraavisos extends Module
         $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
 
         $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitBarraavisosModule';
+        $helper->submit_action = 'submitBarraavisos';
 
         $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
             . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
@@ -204,7 +205,7 @@ class Barraavisos extends Module
         foreach ($languages as $lang) {
             $fields['id'] = Tools::getValue('id', $edit_barra->id);
             $fields['id_lang'] = Tools::getValue('id_lang', $edit_barra->id_lang);
-            $fields['texto'][$lang['id_lang']] = Tools::getValue('texto' . (int)$lang['id_lang'], $edit_barra->texto[$lang['id_lang']]);
+            $fields['texto'][$lang['id_lang']] = Tools::getValue('texto_' . (int)$lang['id_lang'], $edit_barra->texto[$lang['id_lang']]);
         }
 
         return $fields;
@@ -227,8 +228,13 @@ class Barraavisos extends Module
         $languages = Language::getLanguages(false);
 
         foreach ($languages as $lang) {
+            $barra->id_lang = $lang['id_lang'];
             $barra->texto[$lang['id_lang']] = $form_values['texto'][$lang['id_lang']];
         }
+
+       //dump($barra);
+        //die();
+
         if ($edit == true) {
             $barra->update();
         } else {
@@ -270,14 +276,15 @@ class Barraavisos extends Module
     {
         $edit_barra = new Barra_de_avisos($id);
         return $this->renderForm();
-    }
+    } 
 
-    public function hookDisplayBanner()
+    public function hookBackOfficeHeader()
     {
-        $barra = $this->getBlocos('front');
-
-        $this->context->smarty->assign('barra', $barra);
-        return $this->display(__FILE__, '/views/templates/front/index.tpl');
+        if (Tools::getValue('module_name') == $this->name) {
+            $this->context->controller->addJS($this->_path . 'views/js/back.js');
+            $this->context->controller->addCSS($this->_path . 'views/css/back.css');
+        }
+ 
     }
 
     public function hookHeader()
@@ -286,11 +293,11 @@ class Barraavisos extends Module
         $this->context->controller->addCSS($this->_path . '/views/css/front.css');
     }
 
-    public function hookBackOfficeHeader()
+    public function hookDisplayBanner()
     {
-        if (Tools::getValue('module_name') == $this->name) {
-            $this->context->controller->addJS($this->_path . 'views/js/back.js');
-            $this->context->controller->addCSS($this->_path . 'views/css/back.css');
-        }
+        $barra = $this->getBlocos('front');
+
+        $this->context->smarty->assign('barra', $barra);
+        return $this->display(__FILE__, '/views/templates/front/index.tpl');
     }
 }
