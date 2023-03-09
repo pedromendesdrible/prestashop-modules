@@ -24,7 +24,7 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-class Barra_de_avisos extends ObjectModel
+class Bloco_barra_avisos extends ObjectModel
 {
     //public $id_shop;
 
