@@ -186,9 +186,9 @@ class Barraavisos extends Module
             'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
-            'fields_value' => array(
-                'bloco' => Tools::getBlocos('bloco', Configuration::get('bloco')),
-            ),
+             //'fields_value' => array(
+                //'bloco' => Tools::getBlocos('bloco', Configuration::get('bloco')),
+            //),
             
            //$getBlocosValue = $this->context->smarty->getBlocos('blocos');
         );
@@ -211,8 +211,8 @@ class Barraavisos extends Module
             $edit_barra = new Bloco_barra_avisos();
         }
         
-        /*dump($edit_barra);
-        die(); */
+        dump($edit_barra);
+        die(); 
 
         foreach ($languages as $lang) {
             $fields['id'] = Tools::getValue('id', $edit_barra->id);
