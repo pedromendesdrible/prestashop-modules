@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>blocoslidetexto</name>
+    <displayName><![CDATA[Bloco Slide Texto]]></displayName>
+    <version><![CDATA[1.0.0]]></version>
+    <description><![CDATA[Bloco Slide Texto permite adicionar no topo do site um slider com campos de texto edit&aacute;veis por backoffice.]]></description>
+    <author><![CDATA[Drible]]></author>
+    <tab><![CDATA[front_office_features]]></tab>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+	<limited_countries></limited_countries>
+</module>

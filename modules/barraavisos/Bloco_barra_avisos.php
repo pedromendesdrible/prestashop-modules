@@ -26,11 +26,13 @@
 
 class Bloco_barra_avisos extends ObjectModel
 {
-    //public $id_shop;
+    public $id_shop;
 
     public $id_lang;
     public $texto;
-    
+    public $link;
+    public $active;
+
     /**
     * @see ObjectModel::$definition
     */
@@ -44,6 +46,8 @@ class Bloco_barra_avisos extends ObjectModel
 
             // Lang fields
             'texto' =>         array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 100),
+            'link' =>           array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 100),
+            'active' =>           array('type' => self::TYPE_INT, 'lang' => true, 'validate' => 'isCleanHtml', 'size' => 100),
         )
     );
 

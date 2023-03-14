@@ -1,7 +1,7 @@
 <?php
 
 /**
- * 2007-2023 PrestaShop
+ * 2007-2021 PrestaShop
  *
  * NOTICE OF LICENSE
  *
@@ -20,7 +20,7 @@
  * needs please refer to http://www.prestashop.com for more information.
  *
  *  @author    PrestaShop SA <contact@prestashop.com>
- *  @copyright 2007-2023 PrestaShop SA
+ *  @copyright 2007-2021 PrestaShop SA
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  *  International Registered Trademark & Property of PrestaShop SA
  */
@@ -60,16 +60,18 @@ class Barraavisos extends Module
      * Don't forget to create update methods if needed:
      * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
      */
-
     public function install()
     {
         Configuration::updateValue('BARRAAVISOS_LIVE_MODE', false);
 
-        $this->createTables();
+        //include(dirname(__FILE__) . '/sql/install.php');
+
+        /* Creates tables */
 
         return parent::install() &&
+            $this->createTables() &&
             $this->registerHook('header') &&
-            $this->registerHook('displayBackOfficeHeader') &&
+            $this->registerHook('backOfficeHeader') &&
             $this->registerHook('displayBanner');
     }
 
@@ -86,27 +88,34 @@ class Barraavisos extends Module
      */
     public function getContent()
     {
-        /**
-         * If values have been submitted in the form, process.
-         */
-        if (((bool)Tools::isSubmit('submitBarraavisos')) == true) {
+        if (Tools::isSubmit('addBlock')) {
+            $output = $this->renderAddForm();
+        } elseif (Tools::isSubmit('editBlock')) {
+            $id = Tools::getValue('id');
+            $output = $this->editBlock($id);
+        } elseif (Tools::isSubmit('deleteBlock')) {
+            $id = Tools::getValue('id');
+            $output = $this->deleteBlock($id);
+        } elseif (Tools::isSubmit('submitBlocoslidetextoModule')) {
             $output = $this->postProcess(false);
+        } elseif (Tools::isSubmit('submitEditModule')) {
+            $output = $this->postProcess(true);
         } else {
             $this->context->smarty->assign('module_dir', $this->_path);
             $this->context->smarty->assign('link', $this->context->link);
             $this->context->smarty->assign('blocos', $this->getBlocos('admin'));
-
-            //$this->getBlocos(); //no rederform ir buscar getblocos
-
-           $output = $this->renderForm();
+            $output = $this->context->smarty->fetch($this->local_path . 'views/templates/admin/configure.tpl');
         }
 
         return $output;
     }
 
-    public function createTables()
+    protected function createTables()
     {
-        Db::getInstance()->execute(
+        $res = true;
+
+        /* Slides */
+        $res &= Db::getInstance()->execute(
             'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'barra_avisos` (
                  `id_barra_avisos` int NOT NULL AUTO_INCREMENT,
                  PRIMARY KEY (`id_barra_avisos`)
@@ -122,21 +131,23 @@ class Barraavisos extends Module
         ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=UTF8;
         ');
 
-        return true;
+        return $res;
     }
 
     public function deleteTables()
     {
-        Db::getInstance()->Execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'barra_avisos`;');
-        Db::getInstance()->execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'barra_avisos_lang`');
+        $res = true;
 
-        return true;
+        $res &= Db::getInstance()->Execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'barra_avisos`;');
+        $res &= Db::getInstance()->execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'barra_avisos_lang`');
+
+        return $res;
     }
 
     /**
      * Create the form that will be displayed in the configuration of your module.
      */
-    protected function renderForm()
+    protected function renderAddForm()
     {
         $fields_add_form = array(
             'form' => array(
@@ -155,17 +166,18 @@ class Barraavisos extends Module
                     ),
                     array(
                         'type' => 'text',
-                        'label' => 'Texto',
+                        'label' => $this->getTranslator()->trans('Texto', array(), 'Admin.Global'),
                         'name' => 'texto',
                         'lang' => true,
                     ),
+                
+                
                 ),
                 'submit' => array(
                     'title' => $this->getTranslator()->trans('Save', array(), 'Admin.Actions'),
-                ),
+                )
             ),
         );
-       // $this->context->smarty->assign('blocos', $this->getBlocos('admin'));
 
         $helper = new HelperForm();
 
@@ -176,8 +188,11 @@ class Barraavisos extends Module
         $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
 
         $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitBarraavisos';
-
+        if (Tools::getValue('id')) {
+            $helper->submit_action = 'submitEditModule';
+        } else {
+            $helper->submit_action = 'submitBBarraavisosModule';
+        }
         $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
             . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
@@ -186,38 +201,31 @@ class Barraavisos extends Module
             'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
-             //'fields_value' => array(
-                //'bloco' => Tools::getBlocos('bloco', Configuration::get('bloco')),
-            //),
-            
-           //$getBlocosValue = $this->context->smarty->getBlocos('blocos');
         );
 
         return $helper->generateForm(array($fields_add_form));
     }
-        
-       
+
     /**
      * Set values for the inputs.
      */
     protected function getConfigFormValues()
     {
         $languages = Language::getLanguages(false);
-        $fiels = array();
+        $fields = array();
 
         if (Tools::getValue('id')) {
-            $edit_barra = new Bloco_barra_avisos(Tools::getValue('id'));
+            $edit_bloco = new Bloco_barra_avisos(Tools::getValue('id'));
         } else {
-            $edit_barra = new Bloco_barra_avisos();
+            $edit_bloco = new Bloco_barra_avisos();
         }
-        
-        dump($edit_barra);
-        die(); 
 
         foreach ($languages as $lang) {
-            $fields['id'] = Tools::getValue('id', $edit_barra->id);
-            $fields['id_lang'] = Tools::getValue('id_lang', $edit_barra->id_lang);
-            $fields['texto'][$lang['id_lang']] = Tools::getValue('texto_' . (int)$lang['id_lang'], $edit_barra->texto[$lang['id_lang']]);
+            $fields['id'] = Tools::getValue('id', $edit_bloco->id);
+            $fields['id_lang'] = Tools::getValue('id_lang', $edit_bloco->id_lang);
+            $fields['texto'][$lang['id_lang']] = Tools::getValue('texto_' . (int)$lang['id_lang'], $edit_bloco->texto[$lang['id_lang']]);
+            $fields['link'][$lang['id_lang']] = Tools::getValue('link_' . (int)$lang['id_lang'], $edit_bloco->link[$lang['id_lang']]);
+            $fields['active_slide'] = Tools::getValue('active_slide', $edit_bloco->active);
         }
 
         return $fields;
@@ -226,53 +234,80 @@ class Barraavisos extends Module
     /**
      * Save form data.
      */
-    public function postProcess($edit)
+    protected function postProcess($edit)
     {
         $form_values = $this->getConfigFormValues();
 
         if ($edit == true) {
-            $barra = new Bloco_barra_avisos($form_values['id']);
-            $barra->id_barra_avisos = $form_values['id'];
+            $bloco = new Bloco_barra_avisos($form_values['id']);
+            $bloco->id_barra_avisos = $form_values['id'];
         } else {
-            $barra = new Bloco_barra_avisos();
+            $bloco = new Bloco_barra_avisos();
         }
 
         $languages = Language::getLanguages(false);
 
         foreach ($languages as $lang) {
-            $barra->id_lang = $lang['id_lang'];
-            $barra->texto[$lang['id_lang']] = $form_values['texto'][$lang['id_lang']];
+            $bloco->texto[$lang['id_lang']] = $form_values['texto'][$lang['id_lang']];
+            $bloco->link[$lang['id_lang']] = $form_values['link'][$lang['id_lang']];
+            $bloco->active = $form_values['active_slide'];
         }
 
         if ($edit == true) {
-            $barra->update();
+            $bloco->update();
         } else {
-            $barra->add();
+            $bloco->add();
         }
 
         Tools::redirectAdmin(AdminController::$currentIndex . '&configure=' . $this->name . '&token=' . Tools::getAdminTokenLite('AdminModules'));
     }
 
-    public function getBlocos()
+    public function getBlocos($admin)
     {
         $this->context = Context::getContext();
         $id_idioma = $this->context->language->id;
 
-        $barra = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS('
+        if ($admin == 'admin') {
+            $blocos = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS('
             SELECT * FROM ps_barra_avisos i
             LEFT JOIN `ps_barra_avisos_lang` l ON l.`id_barra_avisos` = i.`id_barra_avisos`
             WHERE l.`id_lang` =' . $id_idioma);
+        } else {
+            $blocos = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS('
+            SELECT * FROM ps_barra_avisos i
+            LEFT JOIN `ps_barra_avisos_lang` l ON l.`id_barra_avisos` = i.`id_barra_avisos`
+            WHERE l.`active` = 1 and l.`id_lang` =' . $id_idioma);
 
+            $i = 0;
+            foreach ($blocos as $bloco) {
+                if ($bloco['texto'] == null) {
+                    unset($blocos[$i]);
+                }
+                $i = $i + 1;
+            }
+        }
 
-        return $barra;
+        return $blocos;
+    }
+
+    public function deleteBlock($id)
+    {
+        if ($id) {
+            Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'barra_avisos` WHERE `id_barra_avisos` = ' . $id);
+            Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'barra_avisos_lang` WHERE `id_barra_visos` = ' . $id);
+        }
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules', true) . '&conf=1&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name);
     }
 
     public function editBlock($id)
     {
-        $edit_barra = new Bloco_barra_avisos($id);
-        return $this->renderForm();
+        $edit_bloco = new Bloco_barra_avisos($id);
+        return $this->renderAddForm();
     }
 
+    /**
+     * Add the CSS & JavaScript files you want to be loaded in the BO.
+     */
     public function hookBackOfficeHeader()
     {
         if (Tools::getValue('module_name') == $this->name) {
@@ -281,6 +316,9 @@ class Barraavisos extends Module
         }
     }
 
+    /**
+     * Add the CSS & JavaScript files you want to be added on the FO.
+     */
     public function hookHeader()
     {
         $this->context->controller->addJS($this->_path . '/views/js/front.js');
@@ -289,9 +327,9 @@ class Barraavisos extends Module
 
     public function hookDisplayBanner()
     {
-        $barra = $this->getBlocos('front');
+        $blocos = $this->getBlocos('front');
 
-        $this->context->smarty->assign('barra', $barra);
-        return $this->display(__FILE__, '/views/templates/front/index.tpl');
+        $this->context->smarty->assign('blocos', $blocos);
+        return $this->display(__FILE__, '/views/templates/front/slide_texto.tpl');
     }
 }

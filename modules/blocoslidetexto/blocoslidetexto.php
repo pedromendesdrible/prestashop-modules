@@ -170,7 +170,7 @@ class Blocoslidetexto extends Module
                     ),
                     array(
                         'type' => 'text',
-                        'label' => $this->getTranslator()->trans('Texto 1', array(), 'Admin.Global'), //ver se é daqui
+                        'label' => $this->getTranslator()->trans('Texto 1', array(), 'Admin.Global'),
                         'name' => 'texto1',
                         'lang' => true,
                     ),
